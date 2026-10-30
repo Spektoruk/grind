@@ -456,6 +456,63 @@ nav.tabs button[aria-current="page"]{color:var(--tint)}
 @media (prefers-reduced-motion:reduce){.thumb{transition:none}}
 
 .sheet{overscroll-behavior:contain}
+/* ===== Threads-inspired pass: accents back, bouncy springs, bubble menus ===== */
+:root{
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --spring:linear(0,.009,.035 2.1%,.141,.281 6.7%,.723 12.9%,.938 16.7%,1.017,1.077,1.121,1.149 24.3%,1.159,1.163,1.161,1.154 29.9%,1.129 32.8%,1.051 39.6%,1.017 43.1%,.991,.977 51%,.974 53.8%,.975 57.1%,.997 69.8%,1.003 76.9%,1);
+  --spring-soft:cubic-bezier(.32,.72,0,1);
+  --spring-soft:linear(0,.02,.08 3%,.32 9%,.64 16%,.86 23%,.98 30%,1.03 37%,1.04 43%,1.02 55%,1.005 70%,1);
+  --accent:#3346F5;--accent-ink:#FFFFFF;--accent-soft:rgba(51,70,245,.12);--tint:#3346F5;--pop-bg:rgba(255,255,255,.86);--line-strong:rgba(0,0,0,.14)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-mode="light"]){--accent:#8592FF;--accent-ink:#0B0C10;--accent-soft:rgba(133,146,255,.16);--tint:#8592FF;--pop-bg:rgba(44,44,48,.86);--line-strong:rgba(255,255,255,.16)}}
+:root[data-theme="dark"]:not([data-mode="light"]),:root[data-mode="dark"]{--accent:#8592FF;--accent-ink:#0B0C10;--accent-soft:rgba(133,146,255,.16);--tint:#8592FF;--pop-bg:rgba(44,44,48,.86);--line-strong:rgba(255,255,255,.16)}
+:root[data-mode="light"]{--accent:#3346F5;--accent-ink:#FFFFFF;--accent-soft:rgba(51,70,245,.12);--tint:#3346F5;--pop-bg:rgba(255,255,255,.86);--line-strong:rgba(0,0,0,.14)}
+
+/* tinted liquid glass for the prominent action */
+.btn.primary,.live-bar{background:color-mix(in srgb,var(--accent) 88%,transparent);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  border:1px solid color-mix(in srgb,var(--accent) 60%,white);box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 30%,transparent),inset 0 1px 0 rgba(255,255,255,.35)}
+/* Threads-style secondary: outlined pill */
+.btn:not(.primary):not(.ghost):not(.danger){background:transparent;border:1px solid var(--line-strong);box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+.chip.on{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.tip{background:var(--accent-soft)}
+.brand i{color:var(--tint)}
+
+nav.tabs button[aria-current="page"]{color:var(--tint)}
+
+/* bouncy press: quick squeeze in, springy overshoot out */
+:is(.btn,.icon-btn,button.chip,.set .done,.date-pill,.live-bar,nav.tabs button,.pop-item,.seg button){
+  transition:transform .65s var(--spring),filter .3s ease,opacity .3s ease,background-color .25s ease}
+:is(.btn,.icon-btn,button.chip,.set .done,.date-pill,.live-bar):active{transform:scale(.88);transition:transform .14s cubic-bezier(.2,.8,.4,1)}
+nav.tabs button:active{transform:scale(.84);transition:transform .14s ease-out}
+.h-item{transition:transform .6s var(--spring),background-color .2s}
+.h-item:active{transform:scale(.97);transition:transform .14s ease-out;background:var(--accent-soft)}
+.card.wk{transition:transform .6s var(--spring)}
+.thumb{transition:transform .6s var(--spring),width .6s var(--spring),opacity .2s}
+
+/* sheets: softer spring with a hint of bounce */
+@media (prefers-reduced-motion:no-preference){
+  .sheet{animation:sheetIn .6s var(--spring-soft) both}
+  .set.is-done .done{animation:pop .55s var(--spring)}
+  .toast:not([hidden]){animation:toastPop .55s var(--spring)}
+  @keyframes toastPop{from{transform:translateX(-50%) scale(.6);opacity:0}}
+  @keyframes pop{0%{transform:scale(.7)}100%{transform:scale(1)}}
+}
+
+/* bubble menus */
+.pop-scrim{position:fixed;inset:0;z-index:50}
+.pop{position:fixed;z-index:51;min-width:230px;max-width:calc(100vw - 24px);padding:6px;border-radius:22px;background:var(--pop-bg);
+  -webkit-backdrop-filter:saturate(180%) blur(30px);backdrop-filter:saturate(180%) blur(30px);border:1px solid var(--glass-border);
+  box-shadow:0 20px 50px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.08),inset 0 1px 0 var(--glass-edge);opacity:0;transform:scale(.3)}
+.pop.in{opacity:1;transform:none;transition:transform .55s var(--spring),opacity .12s ease}
+.pop.out{opacity:0;transform:scale(.8);transition:transform .18s ease-in,opacity .18s ease-in}
+.pop hr{border:0;border-top:1px solid var(--line);margin:5px 10px}
+.pop-label{font-size:12px;font-weight:600;color:var(--muted);padding:8px 14px 4px}
+.pop-item{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:44px;padding:10px 14px;border:0;background:transparent;border-radius:14px;font-size:16px;font-weight:500;text-align:left;color:var(--ink)}
+.pop-item svg{width:20px;height:20px;flex:none}
+.pop-item:hover,.pop-item:focus-visible{background:var(--accent-soft);outline:none}
+.pop-item:active{transform:scale(.96);background:var(--accent-soft)}
+.pop-item.danger{color:var(--danger)}
+@media (prefers-reduced-motion:reduce){.pop,.pop.in,.pop.out{transition:none;transform:none}}
+
 </style>
 
 <div class="aurora" aria-hidden="true"></div>
@@ -1328,7 +1385,7 @@ function viewTrain(){
   const card=x=>{const mine=sortedSessions().filter(s=>s.workoutId===x.id);const last=mine.at(-1);const doneToday=last&&last.date===today();
     return `<div class="card wk sort-item"><button class="drag-h" aria-label="${L('Drag to reorder','Перетягни, щоб змінити порядок')}">${ICON.grip}</button><div class="body">
       <div class="spread"><div style="min-width:0"><h3>${esc(x.name)}</h3>${x.demo?SAMPLE():''}</div>
-      <button class="btn sm ghost" data-act="editWk" data-id="${x.id}">${L('Edit','Змінити')}</button></div>
+      <button class="icon-btn flat" data-act="wkMenu" data-id="${x.id}" aria-label="${L('More','Більше')}" aria-haspopup="menu">${ICON.more}</button></div>
       <div class="ex-list">${x.exercises.length?x.exercises.map(e=>esc(nameOf(e.exId))).join(' · '):L('No exercises yet','Вправ ще немає')}</div>
       <div class="spread">${doneToday?`<span class="chip ok">${L('Done today','Зроблено сьогодні')}</span>`:`<span class="note">${last?L('Last: ','Останнє: ')+fmtDW(last.date):L('Not done yet','Ще не виконувалось')}</span>`}
       <button class="btn sm primary" data-act="start" data-id="${x.id}">${ICON.play}${L('Start','Почати')}</button></div></div></div>`};
@@ -1354,7 +1411,7 @@ function viewLive(){
     const tip=hintFor(it.exId,d.id);
     const pending=it.sets.filter(s=>!s.done);
     const showUse=!!(tip&&tip.fill&&!d.editing&&!sameSets(pending,tip.fill.slice(it.sets.length-pending.length)));
-    return `<div class="ex-card sort-item"><div class="head"><button class="drag-h" aria-label="${L('Drag to reorder','Перетягни, щоб змінити порядок')}">${ICON.grip}</button><div class="t"><h3>${esc(exName(ex))}</h3>${alt?`<div class="alt">${esc(alt)}</div>`:''}</div><button class="chip on" data-act="exMenu" data-i="${ii}">${esc(catName(ex.cat))}</button></div>
+    return `<div class="ex-card sort-item"><div class="head"><button class="drag-h" aria-label="${L('Drag to reorder','Перетягни, щоб змінити порядок')}">${ICON.grip}</button><div class="t"><h3>${esc(exName(ex))}</h3>${alt?`<div class="alt">${esc(alt)}</div>`:''}</div><button class="chip on" data-act="exPop" data-i="${ii}" aria-haspopup="menu">${esc(catName(ex.cat))}</button></div>
       <div class="prev">${prev?`${L('Last time','Минулого разу')} · ${esc(fmtDW(prev.date))}: <b>${esc(prevText(prev.sets,f))}</b>`:L('First time doing this one','Ця вправа вперше')}</div>
       ${it.sets.length?`<div class="set-head" style="grid-template-columns:${cols}"><span>#</span>${f.map(k=>`<span>${fl(k)}${FIELDS[k].u?', '+un(FIELDS[k].u):''}</span>`).join('')}<span></span><span></span></div>`:''}
       <div class="sets">${sets}</div>
@@ -1792,7 +1849,7 @@ document.addEventListener('click',e=>{
   const a=el.dataset.act,ds=el.dataset;
   if(a==='overlay'){if(e.target===el)closeModal();return}
   const A={
-    tab(){UI.tab=ds.v;if(ds.v==='live'&&UI.draft&&!UI.draft.editing)keepAwake(true);render();window.scrollTo(0,0)},
+    tab(){const prevTab=UI.tab;UI.tab=ds.v;setTimeout(()=>tabMotion(prevTab),0);if(ds.v==='live'&&UI.draft&&!UI.draft.editing)keepAwake(true);render();window.scrollTo(0,0)},
     settings(){openModal({type:'settings'})},
     browse(){openModal({type:'browse',group:'All',q:''})},
     brGroup(){UI.modal.group=ds.v;UI.modal.q='';renderModal()},
