@@ -561,6 +561,12 @@ input,select,textarea{background:var(--sunk);border:1px solid transparent;box-sh
 .sheet .grab::before{content:"";position:absolute;left:50%;top:10px;width:36px;height:5px;border-radius:3px;background:var(--muted);opacity:.55;transform:translateX(-50%)}
 header.top>[data-act="settings"]{align-self:flex-start}
 
+/* bottom finish: big and separate from cancel so neither gets hit by accident */
+.live-end{display:flex;flex-direction:column;align-items:center;gap:28px;margin-top:12px;padding-bottom:8px}
+.btn.big{min-height:56px;font-size:17px;border-radius:999px}
+.btn.big svg{width:20px;height:20px}
+.btn.ghost.danger-text{color:var(--danger);font-size:14px;min-height:44px;padding-inline:16px}
+
 </style>
 
 <div class="aurora" aria-hidden="true"></div>
@@ -1474,7 +1480,10 @@ function viewLive(){
     <div class="stack"><div class="stack" id="live-list">${items}</div>${items?'':`<div class="empty"><h3>${L('Add your first exercise','Додай першу вправу')}</h3><p>${L('Start typing a name, like “bench” or “жим”.','Почни вводити назву, наприклад «жим» або «bench».')}</p></div>`}
     <div class="card stack"><div class="label">${L('Add exercise','Додати вправу')}</div>${acBox('live')}</div>
     <label class="field"><span>${L('Workout note','Нотатка до тренування')}</span><textarea id="d-note" data-inp="note" placeholder="${L('How it felt, what to change next time','Самопочуття, що змінити наступного разу')}">${esc(d.note||'')}</textarea></label>
-    <button class="btn danger block" data-act="discard">${d.editing?L('Discard changes','Скасувати зміни'):L('Cancel workout','Скасувати тренування')}</button></div>`;
+    <div class="live-end">
+      <button class="btn primary block big" data-act="finish">${ICON.check}${d.editing?L('Save changes','Зберегти зміни'):L('Finish workout','Завершити тренування')}</button>
+      <button class="btn ghost danger-text" data-act="discard">${d.editing?L('Discard changes','Скасувати зміни'):L('Cancel workout','Скасувати тренування')}</button>
+    </div></div>`;
 }
 
 function acBox(ctx){return `<div><input type="search" maxlength="80" id="ac-${ctx}" data-inp="ac" data-ctx="${ctx}" placeholder="${L('Exercise or muscle, English or Ukrainian','Вправа або мʼяз, українською чи англійською')}" autocomplete="off" autocapitalize="sentences"><div id="acl-${ctx}"></div></div>`}
