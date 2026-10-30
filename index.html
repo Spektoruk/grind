@@ -543,6 +543,15 @@ input,select,textarea{background:var(--sunk);border:1px solid transparent;box-sh
 .date-pill{background:var(--surface);border:0;box-shadow:var(--glass-shadow)}
 .tip{border:0}
 
+/* v0.4.2 fixes */
+.sheet>*{flex-shrink:0}
+.mgroups{padding-block:4px}
+.sheet .grab{position:sticky;top:-18px;z-index:3;flex-shrink:0;box-sizing:border-box;width:auto;height:26px;padding:0;opacity:1;
+  margin:-18px calc(-1 * max(16px,env(safe-area-inset-right,0px))) -12px calc(-1 * max(16px,env(safe-area-inset-left,0px)));
+  background:var(--sheet);background-clip:border-box;-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
+.sheet .grab::before{content:"";position:absolute;left:50%;top:10px;width:36px;height:5px;border-radius:3px;background:var(--muted);opacity:.55;transform:translateX(-50%)}
+header.top>[data-act="settings"]{align-self:flex-start}
+
 </style>
 
 <div class="aurora" aria-hidden="true"></div>
