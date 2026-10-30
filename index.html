@@ -3,9 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Grind Glass</title>
+<title>Grind</title>
 <meta name="description" content="Grind: a personal workout log with progress charts, body measurements and progress photos.">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<meta name="theme-color" content="#F3F4F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B0C10" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Grind">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -562,8 +571,8 @@ header.top>[data-act="settings"]{align-self:flex-start}
 <div id="pop-root"></div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/morphdom@2.7.4/dist/morphdom-umd.min.js"></script>
+<script src="vendor/Sortable.min.js"></script>
+<script src="vendor/morphdom-umd.min.js"></script>
 <script>
 /* ---------- icons ---------- */
 const I=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
@@ -1359,6 +1368,8 @@ async function boot(){
       S.mode='db';
     }catch(e){loadLocal()}
   }else loadLocal();
+  if(S.mode!=='db'){try{navigator.storage?.persist?.()}catch{}
+    await Promise.all(Object.values(S.photos).filter(p=>p.idb).map(async p=>{try{const b=await IDB.get(p.id);if(b)PHOTO_URLS[p.id]=URL.createObjectURL(b)}catch{}}))}
   UI.draft=ls.get('zj_draft');
   ls.set('grind_theme',S.lib.settings.theme||'system');applyTheme();
   bump();render();
@@ -1568,7 +1579,11 @@ function viewBody(){
   return `<div class="stack">${form}</div>${chart}${photos}${list}`;
 }
 const dateBtn=(id,inp,v,label,max,big)=>`<label class="date-pill${big?' big':''}">${esc(fmtD(v,{weekday:'short',day:'numeric',month:'short',year:v.slice(0,4)===today().slice(0,4)?undefined:'numeric'}))}<input type="date" id="${id}" data-inp="${inp}" value="${v}" max="${max}" aria-label="${esc(label)}"></label>`;
-const photoSrc=p=>p.assetId?'/_blob/'+p.assetId:(p.dataUrl||p.url||'');
+const IDB={db:null,open(){return this.db||(this.db=new Promise((res,rej)=>{const r=indexedDB.open('grind',1);r.onupgradeneeded=()=>r.result.createObjectStore('photos');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}))},
+  async tx(mode,fn){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('photos',mode);const st=t.objectStore('photos');const q=fn(st);t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})},
+  put(k,v){return this.tx('readwrite',st=>st.put(v,k))},get(k){return this.tx('readonly',st=>st.get(k))},del(k){return this.tx('readwrite',st=>st.delete(k))}};
+const PHOTO_URLS={};
+const photoSrc=p=>p.assetId?'/_blob/'+p.assetId:p.idb?(PHOTO_URLS[p.id]||''):(p.dataUrl||p.url||'');
 const photoImg=p=>photoSrc(p)?`<img src="${esc(photoSrc(p))}" alt="" loading="lazy">`:`<div class="demo-ph">${L('no image','немає фото')}</div>`;
 
 /* ---------- DOM patching: update only what changed ---------- */
@@ -1713,7 +1728,7 @@ function modalSettings(m){
   <div class="field"><span>${L('My exercises','Мої вправи')}</span>${custom.length?`<div class="card entries">${custom.map(e=>`<div class="entry"><span class="vals" style="color:var(--ink)">${esc(e.name)}<br><span class="small muted">${esc(muscleName(e.muscle))} · ${esc(catName(e.cat))}</span></span><button class="btn sm ghost" data-act="exDelLib" data-id="${e.id}">${L('Delete','Видалити')}</button></div>`).join('')}</div>`:`<p class="note">${L(`Exercises you add yourself show up here. The built-in library has ${BUILTIN.length} exercises.`,`Тут зʼявляться вправи, які ти додаси сам. У вбудованій бібліотеці ${BUILTIN.length} вправ.`)}</p>`}</div>
   <div class="field"><span>${L('Data','Дані')}</span><div class="grid2"><button class="btn" data-act="export">${L('Export JSON','Експорт JSON')}</button><label class="btn">${L('Import JSON','Імпорт JSON')}<input type="file" id="imp-file" accept="application/json,.json" data-inp="import" hidden></label></div>
   <div class="grid2">${hasDemo()?`<button class="btn danger" data-act="demoClear">${L('Remove sample data','Прибрати приклад')}</button>`:`<button class="btn" data-act="demo">${L('Add sample data','Додати приклад')}</button>`}<button class="btn danger" data-act="wipe">${L('Erase everything','Стерти все')}</button></div>
-  <p class="note">${S.mode==='db'?L('Your data is stored in this page’s private storage and syncs to any device where you’re signed in to Claude. Nobody else can see it.','Дані зберігаються в особистому сховищі цієї сторінки і доступні на будь-якому пристрої, де ти увійшов у Claude. Ніхто інший їх не бачить.'):L('Claude storage isn’t available here, so data is saved only in this browser. Export regularly so you don’t lose it.','Сховище Claude тут недоступне, тому дані зберігаються тільки в цьому браузері. Регулярно роби експорт.')}</p></div>`;
+  <p class="note">${S.mode==='db'?L('Your data is stored in this page’s private storage and syncs to any device where you’re signed in to Claude. Nobody else can see it.','Дані зберігаються в особистому сховищі цієї сторінки і доступні на будь-якому пристрої, де ти увійшов у Claude. Ніхто інший їх не бачить.'):L('Your data is saved on this device, in this browser. It doesn’t sync to other devices. Export a backup now and then.','Дані зберігаються на цьому пристрої, у цьому браузері, і не синхронізуються з іншими. Час від часу роби резервний експорт.')}</p></div>`;
 }
 function modalPhoto(m){const p=S.photos[m.id];if(!p)return '';
   const e=S.body.entries[p.date];
@@ -1860,6 +1875,7 @@ async function addPhoto(file){
   const date=UI.photoDate||today();toast(L('Uploading photo…','Завантажую фото…'));
   try{const p={id:'p'+rid(),date,created:Date.now()};
     if(ASSETS){const b=await compress(file,1440,.85);const r=await ASSETS.upload(b);p.assetId=r.id}
+    else if(window.indexedDB){const b=await compress(file,1440,.85);await IDB.put(p.id,b);p.idb=true;PHOTO_URLS[p.id]=URL.createObjectURL(b)}
     else{let b=await compress(file,720,.72);let du=await blobToData(b);if(du.length>230000){b=await compress(file,520,.6);du=await blobToData(b)}p.dataUrl=du}
     S.photos[p.id]=p;persistPhoto(p.id);render();toast(L('Photo added','Фото додано'));
   }catch(e){toast(L('Couldn’t add that photo. Try a different image.','Не вдалося додати фото. Спробуй інше.'))}
@@ -1869,6 +1885,7 @@ function exportData(){
     photos:Object.values(S.photos).map(p=>({id:p.id,date:p.date,created:p.created,assetId:p.assetId||null}))};
   const text=JSON.stringify(data,null,1);const fn=`grind-${today()}.json`;
   if(DOWNLOADS){DOWNLOADS.save({filename:fn,data:text}).then(()=>toast(L('File saved','Файл збережено'))).catch(e=>{if(e&&e.code!=='declined')openModal({type:'export',text})})}
+  else if(!window.claude){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.download=fn;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast(L('Backup file saved','Резервну копію збережено'))}catch{openModal({type:'export',text})}}
   else openModal({type:'export',text});
 }
 async function importData(file){
@@ -1910,7 +1927,7 @@ document.addEventListener('click',e=>{
     demoClear(){openModal({type:'confirm',title:L('Remove sample data?','Прибрати приклад?'),text:L('Workouts, templates and measurements marked “sample” will be deleted. Your own entries stay.','Буде видалено тренування, шаблони і заміри з позначкою «приклад». Твої записи залишаться.'),yes:L('Remove','Прибрати'),danger:true,onYes:demoClear})},
     wipe(){openModal({type:'confirm',title:L('Erase everything?','Стерти все?'),text:L('All workouts, templates, measurements, photos and your own exercises will be deleted. This can’t be undone. Export first if you need the data.','Буде видалено всі тренування, шаблони, заміри, фото і твої вправи. Це не можна скасувати. Спершу зроби експорт, якщо дані потрібні.'),yes:L('Erase everything','Стерти все'),danger:true,onYes:()=>{
       for(const id of Object.keys(S.sessions)){delete S.sessions[id];persistSession(id)}
-      for(const [id,p] of Object.entries(S.photos)){if(p.assetId&&ASSETS)ASSETS.delete(p.assetId).catch(()=>{});delete S.photos[id];persistPhoto(id)}
+      for(const [id,p] of Object.entries(S.photos)){if(p.assetId&&ASSETS)ASSETS.delete(p.assetId).catch(()=>{});if(p.idb)IDB.del(p.id).catch(()=>{});delete S.photos[id];persistPhoto(id)}
       const keep={theme:S.lib.settings?.theme||'system',lang:lang()};const E=EMPTY();S.lib=E.lib;Object.assign(S.lib.settings,keep);S.workouts=E.workouts;S.body=E.body;persist('lib');persist('workouts');persist('body');toast(L('Everything erased','Усе стерто'))}})},
     theme(){S.lib.settings={...(S.lib.settings||{}),theme:ds.v};ls.set('grind_theme',ds.v);applyTheme(ds.v);persist('lib');UI.modal.keep=true;renderModal()},
     lang(){S.lib.settings={...(S.lib.settings||{}),lang:ds.v};persist('lib');UI.modal.keep=true;render()},
@@ -1956,7 +1973,7 @@ document.addEventListener('click',e=>{
     openPhoto(){if(UI.cmpMode){const id=ds.id;UI.compare=UI.compare.includes(id)?UI.compare.filter(x=>x!==id):[...UI.compare,id].slice(-2);
         if(UI.compare.length===2){openModal({type:'compare',ids:UI.compare.slice()});UI.compare=[];UI.cmpMode=false}render();return}
       openModal({type:'photo',id:ds.id})},
-    photoDel(){const id=ds.id;openModal({type:'confirm',title:L('Delete this photo?','Видалити фото?'),text:L('The photo will be deleted for good.','Фото буде видалено назавжди.'),yes:L('Delete','Видалити'),danger:true,onYes:()=>{const p=S.photos[id];if(p?.assetId&&ASSETS)ASSETS.delete(p.assetId).catch(()=>{});delete S.photos[id];persistPhoto(id)}})},
+    photoDel(){const id=ds.id;openModal({type:'confirm',title:L('Delete this photo?','Видалити фото?'),text:L('The photo will be deleted for good.','Фото буде видалено назавжди.'),yes:L('Delete','Видалити'),danger:true,onYes:()=>{const p=S.photos[id];if(p?.assetId&&ASSETS)ASSETS.delete(p.assetId).catch(()=>{});if(p?.idb)IDB.del(id).catch(()=>{});delete S.photos[id];persistPhoto(id)}})},
     catField(){const k=ds.k,f=ds.v;const c=cats()[k];let fl2=c.fields.includes(f)?c.fields.filter(x=>x!==f):[...c.fields,f];if(!fl2.length){toast(L('A category needs at least one field','Категорії потрібне хоча б одне поле'));return}
       fl2=Object.keys(FIELDS).filter(x=>fl2.includes(x));S.lib.cats[k]={...(S.lib.cats[k]||{}),fields:fl2};persist('lib');UI.modal.keep=true;renderModal()},
     catAdd(){const k='k'+rid();S.lib.cats[k]={name:L('New category','Нова категорія'),fields:['weight','reps']};persist('lib');UI.modal.keep=true;renderModal()},
@@ -1999,6 +2016,7 @@ document.addEventListener('keydown',e=>{
 });
 
 applyTheme();renderTabs();boot();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 </body>
 </html>
