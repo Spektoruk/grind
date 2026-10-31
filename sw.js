@@ -1,5 +1,5 @@
 // Grind service worker: app shell offline, fresh index when online.
-const VERSION = 'grind-v0.4.4';
+const VERSION = 'grind-v0.4.5';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'vendor/Sortable.min.js', 'vendor/morphdom-umd.min.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 

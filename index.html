@@ -1674,6 +1674,7 @@ function renderModal(){
   else if(m.type==='photo')body=modalPhoto(m);
   else if(m.type==='compare')body=modalCompare(m);
   else if(m.type==='browse')body=modalBrowse(m);
+  else if(m.type==='exEdit')body=modalExEdit(m);
   else if(m.type==='export')body=`<h2>${L('Export data','Експорт даних')}</h2><p class="small muted">${L('Copy this text and save it as a .json file. You can import it back later or move it to the iOS app.','Скопіюй цей текст і збережи у файл .json. Його можна імпортувати назад або перенести в iOS-застосунок.')}</p><textarea id="exp-text" readonly style="min-height:200px;font-family:var(--f-num);font-size:12px">${esc(m.text)}</textarea><div class="grid2"><button class="btn" data-act="close">${L('Close','Закрити')}</button><button class="btn primary" data-act="copyExp">${ICON.copy}${L('Copy','Копіювати')}</button></div>`;
   patch(r,`<div class="overlay" data-act="overlay"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${body}</div></div>`);
   if(m.keep){r.querySelector('.sheet').scrollTop=keepScroll;m.keep=false}
@@ -1734,7 +1735,7 @@ function modalSettings(m){
   <div class="field"><span>${L('Categories and their fields','Категорії та їхні поля')}</span><div class="stack" style="gap:8px">${Object.entries(c).map(([k,v])=>`<div class="cat-row"><div class="spread"><input id="cat-n-${k}" data-inp="catName" data-k="${k}" value="${esc(v.name)}" style="font-weight:600" aria-label="${L('Category name','Назва категорії')}">${usedCat(k)?'':`<button class="icon-btn flat" data-act="catDel" data-k="${k}" aria-label="${L('Delete category','Видалити категорію')}">${ICON.x}</button>`}</div>
     <div class="fieldchips">${Object.keys(FIELDS).map(f=>`<button class="chip${v.fields.includes(f)?' on':''}" data-act="catField" data-k="${k}" data-v="${f}" aria-pressed="${v.fields.includes(f)}">${fname(f)}</button>`).join('')}</div></div>`).join('')}
     <button class="btn" data-act="catAdd">${ICON.plus}${L('New category','Нова категорія')}</button></div></div>
-  <div class="field"><span>${L('My exercises','Мої вправи')}</span>${custom.length?`<div class="card entries">${custom.map(e=>`<div class="entry"><span class="vals" style="color:var(--ink)">${esc(e.name)}<br><span class="small muted">${esc(muscleName(e.muscle))} · ${esc(catName(e.cat))}</span></span><button class="btn sm ghost" data-act="exDelLib" data-id="${e.id}">${L('Delete','Видалити')}</button></div>`).join('')}</div>`:`<p class="note">${L(`Exercises you add yourself show up here. The built-in library has ${BUILTIN.length} exercises.`,`Тут зʼявляться вправи, які ти додаси сам. У вбудованій бібліотеці ${BUILTIN.length} вправ.`)}</p>`}</div>
+  <div class="field"><span>${L('My exercises','Мої вправи')}</span>${custom.length?`<div class="card entries">${custom.map(e=>`<div class="entry"><span class="vals" style="color:var(--ink)">${esc(e.name)}<br><span class="small muted">${esc(muscleName(e.muscle))} · ${esc(catName(e.cat))}</span></span><button class="btn sm ghost" data-act="exEdit" data-id="${e.id}">${L('Edit','Змінити')}</button><button class="btn sm ghost" data-act="exDelLib" data-id="${e.id}">${L('Delete','Видалити')}</button></div>`).join('')}</div>`:`<p class="note">${L(`Exercises you add yourself show up here. The built-in library has ${BUILTIN.length} exercises.`,`Тут зʼявляться вправи, які ти додаси сам. У вбудованій бібліотеці ${BUILTIN.length} вправ.`)}</p>`}</div>
   <div class="field"><span>${L('Data','Дані')}</span><div class="grid2"><button class="btn" data-act="export">${L('Export JSON','Експорт JSON')}</button><label class="btn">${L('Import JSON','Імпорт JSON')}<input type="file" id="imp-file" accept="application/json,.json" data-inp="import" hidden></label></div>
   <div class="grid2">${hasDemo()?`<button class="btn danger" data-act="demoClear">${L('Remove sample data','Прибрати приклад')}</button>`:`<button class="btn" data-act="demo">${L('Add sample data','Додати приклад')}</button>`}<button class="btn danger" data-act="wipe">${L('Erase everything','Стерти все')}</button></div>
   <p class="note">${S.mode==='db'?L('Your data is stored in this page’s private storage and syncs to any device where you’re signed in to Claude. Nobody else can see it.','Дані зберігаються в особистому сховищі цієї сторінки і доступні на будь-якому пристрої, де ти увійшов у Claude. Ніхто інший їх не бачить.'):L('Your data is saved on this device, in this browser. It doesn’t sync to other devices. Export a backup now and then.','Дані зберігаються на цьому пристрої, у цьому браузері, і не синхронізуються з іншими. Час від часу роби резервний експорт.')}</p></div>`;
@@ -1803,6 +1804,19 @@ function tabMotion(prev){
   const ic=document.querySelector('nav.tabs [aria-current="page"] svg');
   ic&&ic.animate([{transform:'scale(1)'},{transform:'scale(.78)'},{transform:'scale(1.14)'},{transform:'scale(1)'}],{duration:480,easing:'ease-out'});
 }
+
+/* ---------- edit an exercise ---------- */
+function openExEdit(id){const e=getEx(id);const back=UI.modal&&UI.modal.type!=='exEdit'?clone({...UI.modal,keep:false}):null;
+  openModal({type:'exEdit',id,back,f:{name:e.builtin?e.name:(e.name||''),uk:e.uk||'',cat:e.cat,muscle:e.muscle}})}
+function modalExEdit(m){const e=getEx(m.id);const f=m.f;const c=cats();const used=useCount().get(m.id)||0;
+  return `<div class="spread"><h2>${L('Edit exercise','Змінити вправу')}</h2>${XBTN()}</div>
+  ${e.builtin?`<div class="card"><b>${esc(e.name)}</b><br><span class="small muted">${esc(e.uk||'')}</span><p class="note" style="margin:6px 0 0">${L('Built-in exercise: the name stays, but you can change its category and muscle group.','Вбудована вправа: назва лишається, але категорію і групу мʼязів можна змінити.')}</p></div>`
+   :`<label class="field"><span>${L('Name','Назва')}</span><input id="xe-name" maxlength="80" data-inp="xe" data-k="name" value="${esc(f.name)}"></label>
+     <label class="field"><span>${L('Second name (optional)','Друга назва (необовʼязково)')}</span><input id="xe-uk" maxlength="80" data-inp="xe" data-k="uk" value="${esc(f.uk)}" placeholder="${L('e.g. the Ukrainian name','наприклад, англійською')}"></label>`}
+  <label class="field"><span>${L('Category','Категорія')}</span><select id="xe-cat" data-inp="xe" data-k="cat">${Object.entries(c).map(([k,v])=>`<option value="${k}" ${k===f.cat?'selected':''}>${esc(v.name)} · ${v.fields.map(fl).join(' + ')}</option>`).join('')}</select></label>
+  <label class="field"><span>${L('Muscle group','Група мʼязів')}</span><select id="xe-mus" data-inp="xe" data-k="muscle">${MUSCLES.map(x=>`<option value="${x}" ${x===f.muscle?'selected':''}>${esc(muscleName(x))}</option>`).join('')}</select></label>
+  ${used&&f.cat!==e.cat?`<p class="note">${L('Past sets keep their numbers; new sets will use the new fields.','Минулі підходи збережуть свої цифри, нові будуть з новими полями.')}</p>`:''}
+  <button class="btn primary block" data-act="xeSave">${L('Save','Зберегти')}</button>`}
 
 /* ---------- actions ---------- */
 function prefill(exId,n){
@@ -1918,16 +1932,25 @@ document.addEventListener('click',e=>{
     settings(){openModal({type:'settings'})},
     browse(){openModal({type:'browse',group:'All',q:''})},
     brGroup(){UI.modal.group=ds.v;UI.modal.q='';renderModal()},
-    brInfo(){const ex=getEx(ds.id);const u=useCount().get(ex.id)||0;const l=lastFor(ex.id);
+    brInfo(){openExEdit(ds.id);return;const ex=getEx(ds.id);const u=useCount().get(ex.id)||0;const l=lastFor(ex.id);
       toast(`${exName(ex)}: ${catName(ex.cat)}, ${u?L(`done ${u}×`,`виконано ${u}×`):L('not done yet','ще не виконувалась')}${l?', '+L('last','останнє')+' '+fmtDW(l.date):''}`)},
     close(){closeModal()},
     popClose(){closePop()},
+    exEdit(){openExEdit(ds.id)},
+    popExEdit(){closePop();openExEdit(ds.id)},
+    xeSave(){const m=UI.modal;const e=getEx(m.id);const f=m.f;
+      if(!e.builtin){const n=(f.name||'').trim();if(!n){toast(L('Give the exercise a name','Дай вправі назву'));document.getElementById('xe-name')?.focus();return}
+        const clash=Object.values(allEx()).find(x=>x.id!==m.id&&(norm(x.name)===norm(n)||norm(x.uk)===norm(n)));if(clash){toast(L(`“${n}” already exists in the library`,`«${n}» вже є в бібліотеці`));return}
+        S.lib.ex[m.id]={...(S.lib.ex[m.id]||{}),name:n.charAt(0).toUpperCase()+n.slice(1),uk:(f.uk||'').trim(),cat:f.cat,muscle:f.muscle}}
+      else S.lib.ex[m.id]={...(S.lib.ex[m.id]||{}),cat:f.cat,muscle:f.muscle};
+      persist('lib');toast(L('Exercise updated','Вправу оновлено'));
+      if(m.back){openModal(m.back)}else closeModal();render()},
     wkMenu(){const id=ds.id;openPop(el,popItem('popEditWk',L('Edit','Змінити'),PEN,`data-id="${id}"`)+popItem('popDupWk',L('Duplicate','Дублювати'),DUP,`data-id="${id}"`)+'<hr>'+popItem('popDelWk',L('Delete','Видалити'),TRASH,`data-id="${id}"`,true))},
     popEditWk(){closePop();openModal({type:'wk',w:clone(S.workouts.items[ds.id])})},
     popDupWk(){closePop();const w=clone(S.workouts.items[ds.id]);w.id='w'+rid();w.name=w.name+L(' (copy)',' (копія)');delete w.demo;w.order=(S.workouts.items[ds.id].order??0)+.5;S.workouts.items[w.id]=w;sortedWk().forEach((x,i)=>x.order=i);persist('workouts');render();toast(L('Workout duplicated','Тренування продубльовано'))},
     popDelWk(){closePop();const w=S.workouts.items[ds.id];openModal({type:'confirm',title:L(`Delete “${w.name}”?`,`Видалити «${w.name}»?`),text:L('The workout template will be deleted. Your history of finished workouts stays.','Шаблон тренування буде видалено. Історія виконаних тренувань залишиться.'),yes:L('Delete','Видалити'),danger:true,onYes:()=>{delete S.workouts.items[w.id];persist('workouts')}})},
     exPop(){const i=+ds.i;const ex=getEx(UI.draft.items[i].exId);const c=cats();
-      openPop(el,`<div class="pop-label">${L('Category','Категорія')}</div>`+Object.entries(c).map(([k,v])=>popItem('popCat',esc(v.name),ex.cat===k?CHECK:'',`data-id="${ex.id}" data-v="${k}"`)).join('')+'<hr>'+popItem('popExRemove',L('Remove from workout','Прибрати з тренування'),TRASH,`data-i="${i}"`,true))},
+      openPop(el,`<div class="pop-label">${L('Category','Категорія')}</div>`+Object.entries(c).map(([k,v])=>popItem('popCat',esc(v.name),ex.cat===k?CHECK:'',`data-id="${ex.id}" data-v="${k}"`)).join('')+'<hr>'+popItem('popExEdit',L('Edit exercise','Змінити вправу'),PEN,`data-id="${ex.id}"`)+popItem('popExRemove',L('Remove from workout','Прибрати з тренування'),TRASH,`data-i="${i}"`,true))},
     popCat(){closePop();const id=ds.id;S.lib.ex[id]={...(S.lib.ex[id]||{}),cat:ds.v};persist('lib');render()},
     popExRemove(){closePop();UI.draft.items.splice(+ds.i,1);saveDraft();render()},
     confirmYes(){const f=UI.modal.onYes;closeModal();f&&f();render()},
@@ -2005,10 +2028,12 @@ document.addEventListener('input',e=>{
   if(k==='set'){const s=UI.draft.items[+el.dataset.i].sets[+el.dataset.s];s[el.dataset.k]=el.value;el.classList.toggle('bad',badField(el.dataset.k,el.value));saveDraft();return}
   if(k==='note'){UI.draft.note=el.value;saveDraft();return}
   if(k==='wkName'){UI.modal.w.name=el.value;return}
+  if(k==='xe'&&UI.modal&&UI.modal.f){UI.modal.f[el.dataset.k]=el.value;return}
   if(k==='wkSets'){const n=parseInt(el.value);UI.modal.w.exercises[+el.dataset.i].sets=isNaN(n)?null:Math.min(20,Math.max(1,n));return}
 });
 document.addEventListener('change',e=>{
   const el=e.target,k=el.dataset.inp;if(!k)return;
+  if(k==='xe'&&UI.modal&&UI.modal.f){UI.modal.f[el.dataset.k]=el.value;if(el.tagName==='SELECT'){UI.modal.keep=true;renderModal()}}
   if(k==='anaEx'){UI.anaEx=el.value;UI.anaMetric=null;render()}
   if(k==='bdate'){if(el.value>today()){toast(L('The date can’t be in the future','Дата не може бути в майбутньому'));render();return}UI.bodyDate=el.value||today();render()}
   if(k==='phdate'){if(el.value>today()){toast(L('The date can’t be in the future','Дата не може бути в майбутньому'));render();return}UI.photoDate=el.value||today();render()}
